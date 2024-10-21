@@ -86,7 +86,7 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error fetching recommendations: {str(e)}")
                 return None
 
-def display_recommendations(recommendations, form_data):
+def display_recommendations(recommendations):
     """Displays the recommendations received from Claude AI."""
     if recommendations:
         tools = recommendations.split("# ")[1:]  # Split by the tool separator
@@ -108,21 +108,19 @@ def display_recommendations(recommendations, form_data):
             pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
             cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
 
-            # Create the tool dictionary
-            tool = {
-                'name': tool_name,
-                'score': match_score,
-                'minBudget': int(budget_range.split(' - ')[0]) if budget_range != "Not available" else 0,
-                'maxBudget': int(budget_range.split(' - ')[1]) if budget_range != "Not available" and len(budget_range.split(' - ')) > 1 else 0,
-                'businessSize': [size.strip() for size in business_size.split(', ')] if business_size != "Not available" else [],
-                'features': features,
-                'pros': pros,
-                'cons': cons,
-                'complexity': form_data['complexity']
-            }
-
             # Render each tool in a single card
-            st.markdown(format_tool_card(tool), unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 22px; font-weight: bold;">{tool_name}</h3>
+                <p><strong>💰 Budget Range:</strong> ${budget_range.split(' - ')[0]} - ${budget_range.split(' - ')[1] if len(budget_range.split(' - ')) > 1 else budget_range.split(' - ')[0]}</p>
+                <p><strong>🏢 Business Size:</strong> {business_size}</p>
+                <p><strong>✅ Complexity:</strong> {complexity_level.capitalize()}</p>
+                <p><strong>🛠️ Features:</strong> {', '.join(features)}</p>
+                <p><strong>👍 Pros:</strong> {', '.join(pros)}</p>
+                <p><strong>👎 Cons:</strong> {', '.join(cons)}</p>
+                <p style="color: #000; font-weight: bold;">Match Score: {match_score}%</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def main():
     st.title("🤖 AI Tool Recommender")
@@ -164,7 +162,7 @@ def main():
 
             # Display recommendations
             if recommendations:
-                display_recommendations(recommendations, form_data)
+                display_recommendations(recommendations)
             else:
                 st.warning("No recommendations available. Please try again later.")
 
