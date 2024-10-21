@@ -5,23 +5,26 @@ import time
 import random
 
 def analyze_with_claude(client, data, max_retries=3):
-   prompt = f"""Based on these requirements:
+   prompt = f"""For educational purposes, I need help analyzing and recommending AI tools based on these requirements:
+
 Business Size: {data['business_size']}
 Budget: ${data['budget']}
 Category: {data['category']}
 Complexity: {data['complexity']}
 Requirements: {data['requirements']}
 
-Return a JSON object with exactly this structure:
+Please provide 3 AI tool recommendations. Give detailed, educational explanations about each tool to help users learn about available options.
+
+Return your response in this exact JSON format:
 {{
  "recommendations": [
    {{
      "name": "Tool Name",
-     "description": "Tool description",
-     "pricing": "Pricing details",
-     "bestFor": "Target users",
+     "description": "Detailed educational description",
+     "pricing": "Detailed pricing information",
+     "bestFor": "Who this tool is best suited for",
      "keyFeatures": ["feature1", "feature2", "feature3"],
-     "pros": ["pro1", "pro2"],
+     "pros": ["pro1", "pro2", "pro3"],
      "cons": ["con1", "con2"],
      "matchScore": 95,
      "websiteUrl": "https://example.com"
@@ -29,28 +32,48 @@ Return a JSON object with exactly this structure:
  ]
 }}
 
-Provide 3 tool recommendations that best match the requirements."""
+Please ensure your response:
+1. Is in valid JSON format
+2. Includes exactly 3 recommendations
+3. Has all the fields specified above
+4. Contains educational details that help users understand each tool
+5. Focuses on tools appropriate for learning and education
+
+Remember this is for educational purposes to help users learn about AI tools."""
 
    for attempt in range(max_retries):
        try:
            st.info(f"Attempt {attempt + 1} of {max_retries}...")
            response = client.beta.messages.create(
                model="claude-3-opus-20240229",
-               messages=[{"role": "user", "content": prompt}],
+               messages=[{
+                   "role": "user", 
+                   "content": prompt
+               }],
                temperature=0.7,
                max_tokens=2000
            )
            
-           # Parse JSON from response content
            try:
-               result = response.content
-               if isinstance(result, str):
-                   return json.loads(result)
+               # Extract content and parse JSON
+               content = response.content
+               if isinstance(content, str):
+                   # Find JSON object in response if it exists
+                   try:
+                       json_start = content.find('{')
+                       json_end = content.rfind('}') + 1
+                       if json_start >= 0 and json_end > 0:
+                           json_str = content[json_start:json_end]
+                           return json.loads(json_str)
+                   except:
+                       st.error("Could not find valid JSON in response")
+                       return None
                else:
-                   st.error("Invalid response format from API")
+                   st.error("Invalid response format")
                    return None
-           except json.JSONDecodeError as e:
-               st.error(f"JSON parsing error: {str(e)}")
+                   
+           except Exception as e:
+               st.error(f"Error parsing response: {str(e)}")
                if attempt < max_retries - 1:
                    continue
                return None
@@ -69,7 +92,11 @@ Provide 3 tool recommendations that best match the requirements."""
            return None
 
 def main():
-   st.title("AI Tool Recommender")
+   st.title("AI Tool Recommender (Educational)")
+   st.markdown("""
+   This tool helps you learn about and discover AI tools based on your requirements.
+   Enter your details below to get educational recommendations.
+   """)
    
    if 'api_key' not in st.session_state:
        st.session_state.api_key = ''
@@ -92,7 +119,8 @@ def main():
                "Monthly Budget (USD)",
                min_value=0,
                max_value=10000,
-               step=50
+               step=50,
+               value=100
            )
            
            category = st.selectbox(
@@ -108,24 +136,24 @@ def main():
            
            requirements = st.text_area(
                "Specific Requirements",
-               placeholder="Describe your needs..."
+               placeholder="Describe what you're looking to learn and achieve..."
            )
            
-           submitted = st.form_submit_button("Get Recommendations")
+           submitted = st.form_submit_button("Get Educational Recommendations")
            
            if submitted:
-               data = {
-                   "business_size": business_size,
-                   "budget": budget,
-                   "category": category,
-                   "complexity": complexity,
-                   "requirements": requirements
-               }
-               
-               with st.spinner("Analyzing requirements..."):
-                   results = analyze_with_claude(client, data)
+               with st.spinner("Analyzing your requirements and preparing educational recommendations..."):
+                   results = analyze_with_claude(client, {
+                       "business_size": business_size,
+                       "budget": budget,
+                       "category": category,
+                       "complexity": complexity,
+                       "requirements": requirements
+                   })
                    
                    if results and 'recommendations' in results:
+                       st.success("Here are your personalized educational recommendations!")
+                       
                        for tool in results['recommendations']:
                            with st.container():
                                col1, col2 = st.columns([3, 1])
@@ -135,7 +163,7 @@ def main():
                                    st.write(tool['description'])
                                    st.write(f"**Best For:** {tool['bestFor']}")
                                    
-                                   with st.expander("Details"):
+                                   with st.expander("Educational Details"):
                                        st.write("**Key Features:**")
                                        for feature in tool['keyFeatures']:
                                            st.write(f"- {feature}")
@@ -153,7 +181,7 @@ def main():
                                with col2:
                                    st.metric("Match Score", f"{tool['matchScore']}%")
                                    st.write(f"**Pricing:** {tool['pricing']}")
-                                   st.link_button("Visit Website", tool['websiteUrl'])
+                                   st.link_button("Learn More", tool['websiteUrl'])
                                    
                                st.divider()
    else:
