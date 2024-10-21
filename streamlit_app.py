@@ -26,7 +26,7 @@ def get_icon(attribute):
     """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
 
-def format_tool_card(tool, is_best_match):
+def format_tool_card(tool):
     """Formats a single tool's details into a single card/block for display."""
     tool_icon = get_icon(tool.get('category', 'unknown'))
     budget_icon = "💰"
@@ -34,7 +34,7 @@ def format_tool_card(tool, is_best_match):
     complexity_icon = get_icon(tool.get('complexity', 'unknown'))
 
     return f"""
-    <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
         <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')}</h3>
         <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
         <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
@@ -42,7 +42,7 @@ def format_tool_card(tool, is_best_match):
         <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
         <p><strong>👍 Pros:</strong> {', '.join(tool.get('pros', ['No pros available']))}</p>
         <p><strong>👎 Cons:</strong> {', '.join(tool.get('cons', ['No cons available']))}</p>
-        <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
+        <p style="color: #000; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
     </div>
     """
 
@@ -112,10 +112,10 @@ def render_form():
 def display_recommendations(recommendations, form_data):
     """Displays the recommendations received from Claude AI."""
     if recommendations:
-        tools = recommendations.split("# ")[1:]
+        tools = recommendations.split("# ")[1:]  # Split by the tool separator
         st.write("## 🎯 Recommended Tools for You")
 
-        for idx, tool_text in enumerate(tools):
+        for tool_text in tools:
             tool_sections = tool_text.split('##')
 
             # Safely extract sections with fallback defaults
@@ -144,9 +144,8 @@ def display_recommendations(recommendations, form_data):
                 'complexity': form_data['complexity']
             }
 
-            is_best_match = idx == 0  # First tool is the best match
-
-            st.markdown(format_tool_card(tool, is_best_match), unsafe_allow_html=True)
+            # Render each tool in a single card
+            st.markdown(format_tool_card(tool), unsafe_allow_html=True)
 
 def main():
     st.title("🤖 AI Tool Recommender")
