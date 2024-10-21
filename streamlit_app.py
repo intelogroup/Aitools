@@ -1,9 +1,55 @@
 import streamlit as st
-import time
 import random
+import time
 from anthropic import Anthropic
 
-# Function to interact with Claude and fetch recommendations
+# Set page layout and title
+st.set_page_config(page_title="AI Tool Recommender", layout="wide")
+
+# Icons dictionary to represent attributes
+ICON_MAP = {
+    "marketing_automation": "🎯",
+    "content_creation": "✍️",
+    "analytics": "📊",
+    "crm": "👥",
+    "email_automation": "✉️",
+    "social_media": "📱",
+    "moderate": "⚙️",
+    "complex": "⚙️",
+    "easy": "✅",
+    "small": "🏢",
+    "medium": "🏢🏢",
+    "large": "🏢🏢🏢"
+}
+
+# Function to get icons for categories
+def get_icon(attribute):
+    """Returns the icon corresponding to the provided attribute."""
+    return ICON_MAP.get(attribute, "🔧")
+
+# Function to format each tool into a card/block
+def format_tool_card(tool):
+    """Formats a single tool's details into a single card/block for display."""
+    tool_icon = get_icon(tool.get('category', 'unknown'))
+    budget_icon = "💰"
+    business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
+    complexity_icon = get_icon(tool.get('complexity', 'unknown'))
+
+    return f"""
+    <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')}</h3>
+        <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
+        <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
+        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
+        <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
+        <p><strong>👍 Pros:</strong> {', '.join(tool.get('pros', ['No pros available']))}</p>
+        <p><strong>👎 Cons:</strong> {', '.join(tool.get('cons', ['No cons available']))}</p>
+        <p style="color: #000; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
+        <p><strong>🔗 Website URL:</strong> {tool.get('url', 'No URL available')}</p>
+    </div>
+    """
+
+# Function to fetch recommendations from Claude AI
 def analyze_with_claude(client, data, max_retries=3):
     prompt = f"""Based on these requirements, recommend 3 AI tools:
 
@@ -58,21 +104,18 @@ Provide 3 recommendations in this exact format."""
                 max_tokens=2000
             )
             
-            # Handle the response content properly
+            # Handle the response content
             if hasattr(response, 'content'):
-                # If response.content is a list of TextBlocks, join their text
                 if isinstance(response.content, list):
                     analysis = ''.join([block.text for block in response.content])
                 else:
                     analysis = response.content
                 
-                # Display the markdown-formatted response
-                st.markdown(analysis, unsafe_allow_html=True)
-                return True
+                return analysis
             else:
                 st.error("Unexpected response format")
                 return None
-                
+
         except Exception as e:
             if "overloaded" in str(e).lower():
                 if attempt < max_retries - 1:
@@ -84,6 +127,46 @@ Provide 3 recommendations in this exact format."""
             else:
                 st.error(f"Error: {str(e)}")
             return None
+
+# Function to display the recommendations in the desired format
+def display_recommendations(recommendations):
+    """Displays the recommendations based on the structured format."""
+    if recommendations:
+        tools = recommendations.split("# ")
+        st.write("## 🎯 Recommended Tools for You")
+
+        for tool_text in tools[1:]:
+            tool_sections = tool_text.split("##")
+
+            tool_name = tool_sections[0].strip()
+            description = tool_sections[1].strip() if len(tool_sections) > 1 else "No description available"
+            pricing = tool_sections[2].strip() if len(tool_sections) > 2 else "Pricing not available"
+            target_users = tool_sections[3].strip() if len(tool_sections) > 3 else "Target users not available"
+            features = tool_sections[4].strip().split(", ") if len(tool_sections) > 4 else ["No features available"]
+            pros = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No pros available"]
+            cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No cons available"]
+            match_score = tool_sections[7].strip().split(":")[-1].strip() if len(tool_sections) > 7 else "0"
+            url = tool_sections[8].strip() if len(tool_sections) > 8 else "No URL available"
+
+            # Create the tool dictionary
+            tool = {
+                'name': tool_name,
+                'description': description,
+                'minBudget': random.randint(10, 100),
+                'maxBudget': random.randint(100, 500),
+                'businessSize': ["small", "medium", "large"],
+                'features': features,
+                'pros': pros,
+                'cons': cons,
+                'score': match_score,
+                'url': url,
+                'complexity': "easy"  # Example
+            }
+
+            # Render each tool in a single card
+            st.markdown(format_tool_card(tool), unsafe_allow_html=True)
+    else:
+        st.warning("No recommendations available.")
 
 # Main function to display the form and process the request
 def main():
@@ -134,7 +217,7 @@ def main():
             submitted = st.form_submit_button("Get Recommendations")
             
             if submitted:
-                analyze_with_claude(client, {
+                recommendations = analyze_with_claude(client, {
                     "business_size": business_size,
                     "budget": budget,
                     "category": category,
@@ -142,9 +225,5 @@ def main():
                     "requirements": requirements
                 })
 
-    else:
-        st.warning("Please enter your Anthropic API key to continue")
-
-# Run the app
-if __name__ == "__main__":
-    main()
+                # Display the recommendations
+                display_recommendations
