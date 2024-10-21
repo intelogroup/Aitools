@@ -118,34 +118,33 @@ def display_recommendations(recommendations, form_data):
         for tool_text in tools:
             tool_sections = tool_text.split('##')
 
-            # Safely extract sections with fallback defaults
-            tool_name = tool_sections[0].strip() if len(tool_sections) > 0 else "Unknown Tool"
-            match_score = tool_sections[1].strip() if len(tool_sections) > 1 else "Not available"
-            budget_range = tool_sections[2].strip() if len(tool_sections) > 2 else "Not available"
-            business_size = tool_sections[3].strip() if len(tool_sections) > 3 else "Not available"
-            complexity_level = tool_sections[4].strip() if len(tool_sections) > 4 else "Not available"
-            features = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No features available"]
-            pros_cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No pros or cons available"]
+            # Extract only relevant sections and ignore the rest
+            # Assuming correct format: Tool Name, Match Score, Budget, Business Size, Complexity, Features, Pros, Cons
+            if len(tool_sections) >= 7:  # Check if we have enough sections
+                tool_name = tool_sections[0].strip()
+                match_score = tool_sections[1].strip().split(":")[-1].strip() if "Match Score" in tool_sections[1] else "Not available"
+                budget_range = tool_sections[2].strip() if "Budget Range" in tool_sections[2] else "Not available"
+                business_size = tool_sections[3].strip() if "Business Size" in tool_sections[3] else "Not available"
+                complexity_level = tool_sections[4].strip() if "Complexity" in tool_sections[4] else "Not available"
+                features = tool_sections[5].strip().split(", ") if "Key Features" in tool_sections[5] else ["No features available"]
+                pros = tool_sections[6].strip().split(", ") if "Pros" in tool_sections[6] else ["No pros available"]
+                cons = tool_sections[6].strip().split(", ") if "Cons" in tool_sections[6] else ["No cons available"]
 
-            # Split pros and cons from the combined list (simulated)
-            pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
-            cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
+                # Create the tool object with details
+                tool = {
+                    'name': tool_name,
+                    'score': match_score,
+                    'minBudget': random.randint(0, 100),  # Mock-up value
+                    'maxBudget': random.randint(100, 1000),  # Mock-up value
+                    'businessSize': ["small", "medium", "large"],  # Simplified
+                    'features': features,
+                    'pros': pros,
+                    'cons': cons,
+                    'complexity': form_data['complexity']
+                }
 
-            # Simulate tool details
-            tool = {
-                'name': tool_name,
-                'score': random.randint(80, 100),  # Simulate score
-                'minBudget': random.randint(0, 100),
-                'maxBudget': random.randint(100, 1000),
-                'businessSize': ["small", "medium", "large"],
-                'features': features,
-                'pros': pros,
-                'cons': cons,
-                'complexity': form_data['complexity']
-            }
-
-            # Render each tool in a single card
-            st.markdown(format_tool_card(tool), unsafe_allow_html=True)
+                # Display the tool in a block
+                st.markdown(format_tool_card(tool), unsafe_allow_html=True)
 
 def main():
     st.title("🤖 AI Tool Recommender")
