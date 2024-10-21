@@ -38,7 +38,7 @@ def format_tool_section(tool, is_best_match):
     """
 
 def get_claude_recommendations(client, form_data):
-    prompt = f"""Based on the following business requirements, recommend 3 AI tools:
+    prompt = f"""Based on the following business requirements, recommend 10 AI tools:
     - Business Size: {form_data['businessSize']}
     - Monthly Budget: ${form_data['budget']}
     - Tool Category: {form_data['category']}
@@ -83,7 +83,7 @@ def get_claude_recommendations(client, form_data):
                             except (IndexError, ValueError):
                                 st.warning(f"Skipping recommendation due to invalid format: {tool_sections[0]}")
                                 continue
-                return recommendations
+                return recommendations[:10]  # Return the first 10 recommendations
     except Exception as e:
         st.error(f"Error fetching recommendations: {str(e)}")
         return None
