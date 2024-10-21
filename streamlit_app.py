@@ -104,17 +104,17 @@ def main():
                                 with st.expander("Features & Details"):
                                     st.write("**Key Features:**")
                                     for feature in tool['keyFeatures']:
-                                        st.write(f"• {feature}")
+                                        st.write("- " + feature)
                                     
                                     cols = st.columns(2)
                                     with cols[0]:
                                         st.write("**Pros:**")
                                         for pro in tool['pros']:
-                                            st.write(f"✓ {pro}")
+                                            st.write("+ " + pro)
                                     with cols[1]:
                                         st.write("**Cons:**")
                                         for con in tool['cons']:
-                                            st.write(f"× {con}")
+                                            st.write("- " + con)
                             
                             with col2:
                                 st.metric("Match Score", f"{tool['matchScore']}%")
