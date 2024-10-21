@@ -1,27 +1,34 @@
 import streamlit as st
 import json
-import anthropic
+from anthropic import Anthropic
 
 st.set_page_config(page_title="AI Tool Recommender", layout="wide")
 
 def get_recommendations(client, data):
    try:
-       prompt = f"""As an AI tool recommendation expert, analyze these requirements and suggest suitable AI tools:
-
+       prompt = f"""Analyze these requirements and suggest AI tools:
 Business Size: {data['business_size']}
-Monthly Budget: ${data['budget']}
+Budget: ${data['budget']}
 Category: {data['category']}
 Complexity: {data['complexity']}
 Requirements: {data['requirements']}
 
-Provide exactly 3 tool recommendations in JSON format with name, description, pricing, bestFor, keyFeatures (list), pros (list), cons (list), matchScore (number), websiteUrl."""
+Provide 3 recommendations in JSON with:
+- name
+- description 
+- pricing
+- bestFor
+- keyFeatures (list)
+- pros (list) 
+- cons (list)
+- matchScore (0-100)
+- websiteUrl"""
 
-       response = client.messages.create(
+       response = client.beta.messages.create(
            model="claude-3-opus-20240229",
            max_tokens=2000,
-           temperature=0.7,
-           response_format={"type": "json_object"},
-           messages=[{"role": "user", "content": prompt}]
+           messages=[{"role": "user", "content": prompt}],
+           temperature=0.7
        )
        return json.loads(response.content)
    except Exception as e:
@@ -64,7 +71,7 @@ def main():
        st.stop()
        
    try:
-       client = anthropic.Anthropic(api_key=api_key)
+       client = Anthropic(api_key=api_key)
    except Exception as e:
        st.error("Invalid API key")
        st.stop()
