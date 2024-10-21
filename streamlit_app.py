@@ -12,8 +12,16 @@ ICON_MAP = {
     "content_creation": "✍️",
     "analytics": "📊",
     "crm": "👥",
-    "email_automation": "✉️",
-    "social_media": "📱",
+    "email_automation": "📧",
+    "sms_marketing": "📱",
+    "marketing_automation": "🤖",
+    "crm": "📋",
+    "site_tracking": "🌐",
+    "website_builder": "🌐",
+    "ecommerce": "🛒",
+    "landing_pages": "🏠",
+    "reporting": "📊",
+    "crown": "👑",
     "moderate": "⚙️",
     "complex": "⚙️",
     "easy": "✅",
@@ -26,25 +34,55 @@ def get_icon(attribute):
     """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
 
-def format_tool_card(tool):
-    """Formats a single tool's details into a single card/block for display."""
-    tool_icon = get_icon(tool.get('category', 'unknown'))
-    budget_icon = "💰"
-    business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
-    complexity_icon = get_icon(tool.get('complexity', 'unknown'))
+def display_recommendations(recommendations):
+    """Displays the recommendations received from Claude AI."""
+    if recommendations:
+        tools = recommendations.split("# ")[1:]  # Split by the tool separator
+        st.write("## 🎯 Recommended Tools for You")
 
-    return f"""
-    <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')}</h3>
-        <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
-        <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
-        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
-        <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
-        <p><strong>👍 Pros:</strong> {', '.join(tool.get('pros', ['No pros available']))}</p>
-        <p><strong>👎 Cons:</strong> {', '.join(tool.get('cons', ['No cons available']))}</p>
-        <p style="color: #000; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
-    </div>
-    """
+        for tool_text in tools:
+            tool_sections = tool_text.split('##')
+
+            # Safely extract sections with fallback defaults
+            tool_name = tool_sections[0].strip() if len(tool_sections) > 0 else "Unknown Tool"
+            match_score = int(tool_sections[1].strip('## Match Score (0-100%): ')) if len(tool_sections) > 1 and tool_sections[1].strip('## Match Score (0-100%): ').isdigit() else 0
+            budget_range = tool_sections[2].strip() if len(tool_sections) > 2 else "Not available"
+            business_size = tool_sections[3].strip() if len(tool_sections) > 3 else "Not available"
+            complexity_level = tool_sections[4].strip() if len(tool_sections) > 4 else "Not available"
+            features = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No features available"]
+            pros_cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No pros or cons available"]
+
+            # Split pros and cons from the combined list
+            pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
+            cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
+
+            # Render each tool in a card-like format
+            if tool_name == "Mailchimp":
+                tool_icon = get_icon("crown") + get_icon("email_automation")
+            else:
+                tool_icon = get_icon("email_automation")
+
+            st.markdown(f"""
+            <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool_name}</h3>
+                <p><strong>💰 Budget Range:</strong> ${budget_range.split(' - ')[0]} - ${budget_range.split(' - ')[1] if len(budget_range.split(' - ')) > 1 else budget_range.split(' - ')[0]}</p>
+                <p><strong>🏢 Business Size:</strong> {business_size}</p>
+                <p><strong>✅ Complexity Level:</strong> {complexity_level.capitalize()}</p>
+                <p><strong>🛠️ Key Features:</strong></p>
+                <ul>
+                    {''.join([f'<li>{get_icon(feature.lower().replace(" ", "_"))} {feature}</li>' for feature in features])}
+                </ul>
+                <p><strong>👍 Pros:</strong></p>
+                <ul>
+                    {''.join([f'<li>{feature}</li>' for feature in pros])}
+                </ul>
+                <p><strong>👎 Cons:</strong></p>
+                <ul>
+                    {''.join([f'<li>{feature}</li>' for feature in cons])}
+                </ul>
+                <p style="color: #000; font-weight: bold;">Match Score: {match_score}%</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def analyze_with_claude(client, form_data, max_retries=3, delay=5):
     """Fetches recommendations from Claude AI, with retry logic for handling overload errors."""
