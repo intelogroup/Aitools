@@ -22,11 +22,9 @@ ICON_MAP = {
     "large": "🏢🏢🏢"
 }
 
-
 def get_icon(attribute):
     """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
-
 
 def format_full_tool_block(tool, is_best_match):
     """Formats a single tool's details into a single card/block for display."""
@@ -50,7 +48,6 @@ def format_full_tool_block(tool, is_best_match):
         <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
     </div>
     """
-
 
 def get_claude_recommendations(client, form_data, max_retries=3, delay=5):
     """Fetches recommendations from Claude AI, with retry logic for handling overload errors."""
@@ -92,7 +89,6 @@ def get_claude_recommendations(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error fetching recommendations: {str(e)}")
                 return None
 
-
 def render_form():
     """Renders the form for user input and returns the filled data."""
     with st.form("tool_recommendation_form"):
@@ -116,7 +112,6 @@ def render_form():
         }
     return None
 
-
 def display_recommendations(recommendations, form_data):
     """Displays the recommendations received from Claude AI."""
     if recommendations:
@@ -126,14 +121,18 @@ def display_recommendations(recommendations, form_data):
         for idx, tool_text in enumerate(tools):
             tool_sections = tool_text.split('##')
 
-            # Extracting necessary fields from the response text
-            tool_name = tool_sections[0].strip()
-            match_score = tool_sections[1].strip()
-            budget_range = tool_sections[2].strip()
-            business_size = tool_sections[3].strip()
-            complexity_level = tool_sections[4].strip()
-            features = tool_sections[5].strip().split(", ")
-            pros_cons = tool_sections[6].strip().split(", ")
+            # Safely extract sections with fallback defaults
+            tool_name = tool_sections[0].strip() if len(tool_sections) > 0 else "Unknown Tool"
+            match_score = tool_sections[1].strip() if len(tool_sections) > 1 else "Not available"
+            budget_range = tool_sections[2].strip() if len(tool_sections) > 2 else "Not available"
+            business_size = tool_sections[3].strip() if len(tool_sections) > 3 else "Not available"
+            complexity_level = tool_sections[4].strip() if len(tool_sections) > 4 else "Not available"
+            features = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No features available"]
+            pros_cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No pros or cons available"]
+
+            # Split pros and cons from the combined list (simulated)
+            pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
+            cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
 
             # Simulate tool details
             tool = {
@@ -143,15 +142,14 @@ def display_recommendations(recommendations, form_data):
                 'maxBudget': random.randint(100, 1000),
                 'businessSize': ["small", "medium", "large"],
                 'features': features,
-                'pros': pros_cons[:len(pros_cons) // 2],  # Simulated pros
-                'cons': pros_cons[len(pros_cons) // 2:],  # Simulated cons
+                'pros': pros,
+                'cons': cons,
                 'complexity': form_data['complexity']
             }
 
             is_best_match = idx == 0  # First tool is the best match
 
             st.markdown(format_full_tool_block(tool, is_best_match), unsafe_allow_html=True)
-
 
 def main():
     st.title("🤖 AI Tool Recommender")
@@ -179,7 +177,6 @@ def main():
 
     else:
         st.warning("⚠️ Please enter your API key")
-
 
 if __name__ == "__main__":
     main()
