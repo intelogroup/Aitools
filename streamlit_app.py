@@ -5,42 +5,44 @@ from anthropic import Anthropic
 # Set page layout and title
 st.set_page_config(page_title="AI Tool Recommender", layout="wide")
 
-# Icons dictionary to represent unique logos for tools
-def get_unique_logo(tool_name):
-    logos = {
-        "Mixpanel": "📊",
-        "Google Analytics": "🌐",
-        "HubSpot": "🚀",
+# Define distinct logos for each recommendation (name-based for this example)
+def get_unique_logo(recommendation_name):
+    logo_map = {
+        "ActiveCampaign": "🚀",
         "Mailchimp": "🐵",
-        "ActiveCampaign": "📧",
-        "Marketo": "📈"
+        "Marketo": "📊",
+        "HubSpot": "📈",
+        "Salesforce": "🌐"
     }
-    return logos.get(tool_name, "🔧")  # Default icon if no match
+    return logo_map.get(recommendation_name, "💡")  # Default icon
 
-# Function to render the match score as a red circular element
-def render_match_score(score):
-    return f"""
-    <div style="background-color: #d9534f; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold;">
+# Format tool section for display in a single card
+def format_tool_section(tool, is_best_match):
+    # Safely access dictionary keys using get() with default values
+    logo = get_unique_logo(tool.get('name', 'Unknown Tool'))
+    score = tool.get('score', 0)
+    
+    # Create the dark red circle with white text for the score
+    score_html = f"""
+    <div style="display:inline-block; background-color:#b22222; color:white; border-radius:50%; width:40px; height:40px; text-align:center; line-height:40px; font-weight:bold;">
         {score}%
     </div>
     """
-
-# Format tool section for display
-def format_tool_section(tool, is_best_match):
-    logo = get_unique_logo(tool.get('name', 'Unknown Tool'))
+    
     budget_icon = "💰"
     business_size_icons = " ".join([get_unique_logo(size) for size in tool.get('businessSize', [])])
-    complexity_icon = get_unique_logo(tool.get('complexity', 'Unknown'))
-
+    complexity_icon = get_unique_logo(tool.get('complexity', 'unknown'))
+    
+    # HTML structure for the card with tool details
     return f"""
     <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 22px; font-weight: bold;">{logo} {tool.get('name', 'Unknown Tool')}</h3>
-            {render_match_score(tool.get('score', 0))}
+        <div style="display: flex; align-items: center;">
+            <h3 style="font-size: 22px; font-weight: bold; margin-right: 10px;">{logo} {tool.get('name', 'Unknown Tool')}</h3>
+            {score_html}
         </div>
         <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
         <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
-        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
+        <p><strong>⚙️ Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
         <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
     </div>
     """
@@ -61,6 +63,7 @@ def get_claude_recommendations(client, form_data):
     ## Business Size (small, medium, large)
     ## Complexity Level
     ## Key Features
+    ## Pros and Cons
     """
 
     try:
