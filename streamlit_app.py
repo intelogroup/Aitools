@@ -30,12 +30,12 @@ ICON_MAP = {
     "large": "🏢🏢🏢"
 }
 
+# Function to get icon for specific attributes
 def get_icon(attribute):
-    """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
 
+# Function to display tool recommendations in a card format
 def display_recommendations(recommendations):
-    """Displays the recommendations received from Claude AI."""
     if recommendations:
         tools = recommendations.split("# ")[1:]  # Split by the tool separator
         st.write("## 🎯 Recommended Tools for You")
@@ -62,6 +62,7 @@ def display_recommendations(recommendations):
             else:
                 tool_icon = get_icon("email_automation")
 
+            # Display the tool in a formatted card
             st.markdown(f"""
             <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                 <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool_name}</h3>
@@ -74,18 +75,18 @@ def display_recommendations(recommendations):
                 </ul>
                 <p><strong>👍 Pros:</strong></p>
                 <ul>
-                    {''.join([f'<li>{feature}</li>' for feature in pros])}
+                    {''.join([f'<li>{pro}</li>' for pro in pros])}
                 </ul>
                 <p><strong>👎 Cons:</strong></p>
                 <ul>
-                    {''.join([f'<li>{feature}</li>' for feature in cons])}
+                    {''.join([f'<li>{con}</li>' for con in cons])}
                 </ul>
                 <p style="color: #000; font-weight: bold;">Match Score: {match_score}%</p>
             </div>
             """, unsafe_allow_html=True)
 
+# Function to fetch recommendations from Claude AI
 def analyze_with_claude(client, form_data, max_retries=3, delay=5):
-    """Fetches recommendations from Claude AI, with retry logic for handling overload errors."""
     prompt = f"""Based on the following business requirements, recommend 5 AI tools:
     - Business Size: {form_data['businessSize']}
     - Monthly Budget: ${form_data['budget']}
@@ -113,16 +114,13 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                     max_tokens=2000
                 )
 
-                # Handle the response content properly
                 if hasattr(response, 'content'):
-                    # If response.content is a list of TextBlocks, join their text
                     if isinstance(response.content, list):
                         analysis = ''.join([block.text for block in response.content])
                     else:
                         analysis = response.content
 
-                    # Display the markdown-formatted response
-                    st.markdown(analysis, unsafe_allow_html=True)
+                    display_recommendations(analysis)
                     return True
                 else:
                     st.error("Unexpected response format")
@@ -140,6 +138,7 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error: {str(e)}")
             return None
 
+# Main function to display the form and process the request
 def main():
     st.title("🤖 AI Tool Recommender")
 
@@ -175,7 +174,6 @@ def main():
                 'requirements': requirements
             }
 
-            # Get recommendations from Claude AI
             analyze_with_claude(client, form_data)
 
     else:
