@@ -86,7 +86,7 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error fetching recommendations: {str(e)}")
                 return None
 
-def display_recommendations(recommendations):
+def display_recommendations(recommendations, form_data):
     """Displays the recommendations received from Claude AI."""
     if recommendations:
         tools = recommendations.split("# ")[1:]  # Split by the tool separator
@@ -163,7 +163,10 @@ def main():
             recommendations = analyze_with_claude(client, form_data)
 
             # Display recommendations
-            display_recommendations(recommendations)
+            if recommendations:
+                display_recommendations(recommendations, form_data)
+            else:
+                st.warning("No recommendations available. Please try again later.")
 
     else:
         st.warning("⚠️ Please enter your API key")
