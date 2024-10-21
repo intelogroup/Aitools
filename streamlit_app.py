@@ -6,6 +6,34 @@ import time
 # Set page layout and title
 st.set_page_config(page_title="AI Tool Recommender", layout="wide")
 
+# Custom CSS to style the cards with deep blue background, white text, and elevation
+st.markdown("""
+    <style>
+    .card {
+        background-color: #1E3A8A;  /* Deep blue background */
+        color: white;  /* White text */
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);  /* Elevated effect */
+        border: 2px solid #0A2540;
+    }
+    .card h3 {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .card p {
+        margin: 5px 0;
+    }
+    .card ul {
+        margin-left: 20px;
+    }
+    .card ul li {
+        list-style-type: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Icons dictionary to represent attributes
 ICON_MAP = {
     "marketing_automation": "🎯",
@@ -58,8 +86,8 @@ def display_recommendations(recommendations):
             tool_icon = get_icon("email_automation")
 
             st.markdown(f"""
-            <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool_name}</h3>
+            <div class="card">
+                <h3>{tool_icon} {tool_name}</h3>
                 <p><strong>💰 Budget Range:</strong> ${budget_range.split(' - ')[0]} - ${budget_range.split(' - ')[1] if len(budget_range.split(' - ')) > 1 else budget_range.split(' - ')[0]}</p>
                 <p><strong>🏢 Business Size:</strong> {business_size}</p>
                 <p><strong>✅ Complexity Level:</strong> {complexity_level.capitalize()}</p>
@@ -75,7 +103,7 @@ def display_recommendations(recommendations):
                 <ul>
                     {''.join([f'<li>{feature}</li>' for feature in cons])}
                 </ul>
-                <p style="color: #000; font-weight: bold;">Match Score: {match_score}%</p>
+                <p style="color: #FFFFFF; font-weight: bold;">Match Score: {match_score}%</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -117,7 +145,7 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                         analysis = response.content
 
                     # Display the markdown-formatted response
-                    st.markdown(analysis, unsafe_allow_html=True)
+                    display_recommendations(analysis)
                     return True
                 else:
                     st.error("Unexpected response format")
