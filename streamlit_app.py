@@ -86,29 +86,6 @@ def get_claude_recommendations(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error fetching recommendations: {str(e)}")
                 return None
 
-@st.cache_data
-def get_form_data():
-    with st.form("tool_recommendation_form"):
-        st.write("### 📋 Fill out the form to get personalized AI tool recommendations")
-
-        business_size = st.selectbox("🏢 Business Size", ["small", "medium", "large"])
-        budget = st.number_input("💵 Monthly Budget (USD)", min_value=0, value=100)
-        category = st.selectbox("📊 Tool Category", ["marketing_automation", "content_creation", "analytics", "crm"])
-        complexity = st.selectbox("⚙️ Complexity", ["easy", "moderate", "complex"])
-        requirements = st.text_area("📝 Specific Requirements", placeholder="Describe your needs...")
-
-        submitted = st.form_submit_button("🔍 Get Recommendations")
-
-    if submitted:
-        return {
-            'businessSize': business_size,
-            'budget': budget,
-            'category': category,
-            'complexity': complexity,
-            'requirements': requirements
-        }
-    return None
-
 def display_recommendations(recommendations, form_data):
     """Displays the recommendations received from Claude AI."""
     if recommendations:
@@ -162,9 +139,26 @@ def main():
         client = Anthropic(api_key=api_key)
 
         # Render form and fetch input data
-        form_data = get_form_data()
+        with st.form("tool_recommendation_form"):
+            st.write("### 📋 Fill out the form to get personalized AI tool recommendations")
 
-        if form_data:
+            business_size = st.selectbox("🏢 Business Size", ["small", "medium", "large"])
+            budget = st.number_input("💵 Monthly Budget (USD)", min_value=0, value=100)
+            category = st.selectbox("📊 Tool Category", ["marketing_automation", "content_creation", "analytics", "crm"])
+            complexity = st.selectbox("⚙️ Complexity", ["easy", "moderate", "complex"])
+            requirements = st.text_area("📝 Specific Requirements", placeholder="Describe your needs...")
+
+            submitted = st.form_submit_button("🔍 Get Recommendations")
+
+        if submitted:
+            form_data = {
+                'businessSize': business_size,
+                'budget': budget,
+                'category': category,
+                'complexity': complexity,
+                'requirements': requirements
+            }
+
             # Get recommendations from Claude AI
             recommendations = get_claude_recommendations(client, form_data)
 
