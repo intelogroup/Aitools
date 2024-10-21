@@ -226,4 +226,11 @@ def main():
                 })
 
                 # Display the recommendations
-                display_recommendations
+                display_recommendations(recommendations)
+
+    else:
+        st.warning("Please enter your Anthropic API key to continue")
+
+# Run the app
+if __name__ == "__main__":
+    main()
