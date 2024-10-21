@@ -2,9 +2,6 @@ import streamlit as st
 import random
 from anthropic import Anthropic
 
-# Set page layout and title
-st.set_page_config(page_title="AI Tool Recommender", layout="wide")
-
 # Icons dictionary to represent attributes
 ICONS = {
     "marketing_automation": "💼",
@@ -55,7 +52,6 @@ def get_claude_recommendations(client, form_data):
     ## Business Size (small, medium, large)
     ## Complexity Level
     ## Key Features
-    ## Pros and Cons
     """
 
     try:
@@ -68,7 +64,21 @@ def get_claude_recommendations(client, form_data):
             )
             
             if hasattr(response, 'content'):
-                return ''.join([block.text for block in response.content]) if isinstance(response.content, list) else response.content
+                recommendations = []
+                for block in response.content:
+                    if block.type == 'text':
+                        tool_sections = block.text.split('\n')
+                        tool = {
+                            'name': tool_sections[0].strip('# '),
+                            'score': int(tool_sections[1].strip('## Match Score (0-100%): ')),
+                            'minBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[0]),
+                            'maxBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[1]),
+                            'businessSize': [size.strip() for size in tool_sections[3].strip('## Business Size (small, medium, large): ').split(', ')],
+                            'complexity': tool_sections[4].strip('## Complexity Level: '),
+                            'features': [feature.strip() for feature in tool_sections[5].strip('## Key Features: ').split(', ')]
+                        }
+                        recommendations.append(tool)
+                return recommendations
     except Exception as e:
         st.error(f"Error fetching recommendations: {str(e)}")
         return None
@@ -109,29 +119,9 @@ def main():
             recommendations = get_claude_recommendations(client, form_data)
 
             if recommendations:
-                tools = recommendations.split("# ")[1:]
-
                 st.write("## 🎯 Recommended Tools for You")
-                for tool_text in tools:
-                    tool_sections = tool_text.split('##')
-                    tool_name = tool_sections[0].strip()
-                    tool_score = int(tool_sections[1].strip().split(" ")[0])
-                    tool_budget = tool_sections[2].strip().split(" ")[2:]
-                    tool_business_size = tool_sections[3].strip().split(" ")[2:]
-                    tool_complexity = tool_sections[4].strip().split(" ")[1]
-                    tool_features = [feature.strip() for feature in tool_sections[5].strip().split(":")[1].split(",")]
-
-                    tool = {
-                        'name': tool_name,
-                        'score': tool_score,
-                        'minBudget': int(tool_budget[0]),
-                        'maxBudget': int(tool_budget[2]),
-                        'businessSize': tool_business_size,
-                        'complexity': tool_complexity,
-                        'features': tool_features
-                    }
-
-                    st.markdown(format_tool_section(tool, False), unsafe_allow_html=True)
+                for idx, tool in enumerate(recommendations):
+                    st.markdown(format_tool_section(tool, idx == 0), unsafe_allow_html=True)
 
     else:
         st.warning("⚠️ Please enter your API key")
