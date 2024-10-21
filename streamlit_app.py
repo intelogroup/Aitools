@@ -70,9 +70,9 @@ def get_claude_recommendations(client, form_data):
                         tool_sections = block.text.split('\n')
                         tool = {
                             'name': tool_sections[0].strip('# '),
-                            'score': int(tool_sections[1].strip('## Match Score (0-100%): ')),
-                            'minBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[0]),
-                            'maxBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[1]),
+                            'score': int(tool_sections[1].strip('## Match Score (0-100%): ')) if tool_sections[1].strip('## Match Score (0-100%): ') else 0,
+                            'minBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[0]) if tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[0] else 0,
+                            'maxBudget': int(tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[1]) if tool_sections[2].strip('## Budget Range (USD): ').split(' - ')[1] else 0,
                             'businessSize': [size.strip() for size in tool_sections[3].strip('## Business Size (small, medium, large): ').split(', ')],
                             'complexity': tool_sections[4].strip('## Complexity Level: '),
                             'features': [feature.strip() for feature in tool_sections[5].strip('## Key Features: ').split(', ')]
