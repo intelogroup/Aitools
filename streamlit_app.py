@@ -22,30 +22,17 @@ ICON_MAP = {
     "large": "🏢🏢🏢"
 }
 
-
 def get_icon(attribute):
     """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
 
-
-def format_tool_section(tool, is_best_match):
-    """Formats a tool section for display in the UI."""
-    tool_icon = get_icon(tool.get('category', 'unknown'))
-    budget_icon = "💰"
-    business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
-    complexity_icon = get_icon(tool.get('complexity', 'unknown'))
-
+def format_full_tool_card(tool_text, is_best_match):
+    """Formats the full recommendation from Claude AI into a single card."""
     return f"""
     <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')}</h3>
-        <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
-        <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
-        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
-        <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
-        <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
+        <p style="white-space: pre-wrap; font-size: 18px;">{tool_text}</p>
     </div>
     """
-
 
 def get_claude_recommendations(client, form_data, max_retries=3, delay=5):
     """Fetches recommendations from Claude AI, with retry logic for handling overload errors."""
@@ -87,7 +74,6 @@ def get_claude_recommendations(client, form_data, max_retries=3, delay=5):
                 st.error(f"Error fetching recommendations: {str(e)}")
                 return None
 
-
 def render_form():
     """Renders the form for user input and returns the filled data."""
     with st.form("tool_recommendation_form"):
@@ -111,30 +97,17 @@ def render_form():
         }
     return None
 
-
-def display_recommendations(recommendations, form_data):
-    """Displays the recommendations received from Claude AI."""
+def display_recommendations(recommendations):
+    """Displays the recommendations received from Claude AI in a single card per tool."""
     if recommendations:
-        tools = recommendations.split("# ")[1:]
+        tools = recommendations.split("# ")[1:]  # Each recommendation starts with "# "
         st.write("## 🎯 Recommended Tools for You")
 
         for idx, tool_text in enumerate(tools):
-            tool_sections = tool_text.split('##')
-            tool_name = tool_sections[0].strip()
-            is_best_match = idx == 0
+            is_best_match = idx == 0  # Highlight the first recommendation as the best match
 
-            tool = {
-                'name': tool_name,
-                'score': random.randint(80, 100),
-                'minBudget': random.randint(0, 100),
-                'maxBudget': random.randint(100, 1000),
-                'businessSize': ["small", "medium", "large"],
-                'features': ["Email Automation", "CRM", "Advanced Analytics"],
-                'complexity': form_data['complexity']
-            }
-
-            st.markdown(format_tool_section(tool, is_best_match), unsafe_allow_html=True)
-
+            # Display the full recommendation as one card
+            st.markdown(format_full_tool_card(tool_text, is_best_match), unsafe_allow_html=True)
 
 def main():
     st.title("🤖 AI Tool Recommender")
@@ -158,11 +131,10 @@ def main():
             recommendations = get_claude_recommendations(client, form_data)
 
             # Display recommendations
-            display_recommendations(recommendations, form_data)
+            display_recommendations(recommendations)
 
     else:
         st.warning("⚠️ Please enter your API key")
-
 
 if __name__ == "__main__":
     main()
