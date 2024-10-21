@@ -1,146 +1,131 @@
 import streamlit as st
-from anthropic import Anthropic
-import time
 import random
+from anthropic import Anthropic
 
+# Set page layout and title
 st.set_page_config(page_title="AI Tool Recommender", layout="wide")
 
-# Enhanced styling using Streamlit native components
-def get_icon(category):
+# Mock database of AI tools for recommendation (just like in the React example)
+ai_tools = [
+    {
+        'name': 'ActiveCampaign',
+        'category': 'marketing_automation',
+        'minBudget': 29,
+        'maxBudget': 500,
+        'features': ['Email Automation', 'CRM', 'Lead Scoring'],
+        'businessSize': ['small', 'medium'],
+        'complexity': 'moderate'
+    },
+    {
+        'name': 'Mailchimp',
+        'category': 'marketing_automation',
+        'minBudget': 0,
+        'maxBudget': 300,
+        'features': ['Email Automation', 'Landing Pages', 'Social Media'],
+        'businessSize': ['small'],
+        'complexity': 'easy'
+    },
+    {
+        'name': 'Marketo',
+        'category': 'marketing_automation',
+        'minBudget': 1195,
+        'maxBudget': 5000,
+        'features': ['Email Automation', 'CRM', 'Lead Scoring', 'Advanced Analytics'],
+        'businessSize': ['large', 'enterprise'],
+        'complexity': 'complex'
+    },
+]
+
+# Icons dictionary to represent attributes
+def get_icon(attribute):
     return {
-        "Marketing Automation": "🎯",
-        "Content Creation": "✍️",
-        "Analytics": "📊",
-        "CRM": "👥",
-        "Project Management": "📋",
-        "Customer Service": "💬",
-        "Sales": "💰",
-        "Other": "🔧"
-    }.get(category, "🛠️")
+        "marketing_automation": "🎯",
+        "content_creation": "✍️",
+        "analytics": "📊",
+        "crm": "👥",
+        "email_automation": "✉️",
+        "social_media": "📱",
+        "moderate": "⚙️",
+        "complex": "⚙️",
+        "easy": "✅",
+        "small": "🏢",
+        "medium": "🏢🏢",
+        "large": "🏢🏢🏢"
+    }.get(attribute, "🔧")
 
-# Formatting each section of the tool recommendation
-def format_tool_section(section_text, section_title, icon):
-    section_content = section_text.split('\n', 1)[1].strip()
-    if section_title == "Match Score":
-        score = int(section_content.split('%')[0].strip())
-        return f"**{icon} {section_title}:** {score}%"
-    elif section_title == "Features":
-        features = section_content.split('- ')[1:]
-        return f"**{icon} {section_title}:**\n- " + '\n- '.join(features)
-    elif section_title == "Pros/Cons":
-        pros = [line.strip() for line in section_content.splitlines() if line.startswith("✓")]
-        cons = [line.strip() for line in section_content.splitlines() if line.startswith("×")]
-        pros_list = "\n- ".join(pros)
-        cons_list = "\n- ".join(cons)
-        return f"**{icon} Pros:**\n- {pros_list}\n\n**{icon} Cons:**\n- {cons_list}"
-    else:
-        return f"**{icon} {section_title}:** {section_content}"
+# Calculate tool match score based on form data
+def calculate_tool_score(tool, form_data):
+    score = 0
+    budget = int(form_data['budget'])
 
-# Analyzing tools and rendering cards
-def analyze_tools(client, data):
-    prompt = f"""Recommend 3 AI tools based on:
-- Business: {data['business_size']}
-- Budget: ${data['budget']}
-- Category: {data['category']}
-- Complexity: {data['complexity']}
-- Needs: {data['requirements']}
+    if tool['minBudget'] <= budget <= tool['maxBudget']:
+        score += 30
+    if form_data['businessSize'] in tool['businessSize']:
+        score += 25
+    if form_data['category'] == tool['category']:
+        score += 25
+    if form_data['complexity'] == tool['complexity']:
+        score += 20
 
-Format as:
-# Tool Name
-## Match Score
-[0-100]%
-## Description
-[text]
-## Pricing
-[details]
-## Features
-- [feature]
-## Pros/Cons
-✓ [pro]
-× [con]"""
+    return score
 
-    try:
-        with st.spinner("🔍 Analyzing your requirements..."):
-            response = client.beta.messages.create(
-                model="claude-3-opus-20240229",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=2000
-            )
-            
-            if hasattr(response, 'content'):
-                content = ''.join([block.text for block in response.content]) if isinstance(response.content, list) else response.content
-                
-                # Split content into individual tools
-                tools = content.split('# ')[1:]
-                
-                for tool in tools:
-                    sections = tool.split('##')
-                    tool_name = sections[0].strip()
-
-                    # Display the tool information with icons and better formatting
-                    st.markdown(f"### {get_icon(data['category'])} {tool_name}")
-                    for section in sections[1:]:
-                        section_title = section.split('\n', 1)[0].strip()
-                        icon = {
-                            "Match Score": "🏅",
-                            "Description": "📝",
-                            "Pricing": "💵",
-                            "Features": "🔧",
-                            "Pros/Cons": "👍/👎"
-                        }.get(section_title, "ℹ️")
-                        st.markdown(format_tool_section(section, section_title, icon))
-                    st.markdown("---")  # Divider between tools
-
-                return True
-                
-    except Exception as e:
-        st.error(f"Error: {str(e)}")
-        return False
-
-# Main function with improved form and icons
+# Main function
 def main():
     st.title("🤖 AI Tool Recommender")
-    
-    if 'api_key' not in st.session_state:
-        st.session_state.api_key = ''
-    
+
     with st.sidebar:
-        api_key = st.text_input("API Key:", type="password", value=st.session_state.api_key)
+        api_key = st.text_input("🔑 API Key", type="password")
     
-    if api_key:
-        st.session_state.api_key = api_key
-        client = Anthropic(api_key=api_key)
+    # Input form
+    with st.form("tool_recommendation_form"):
+        st.write("### 📋 Fill out the form to get personalized AI tool recommendations")
         
-        with st.form("recommend_form"):
-            c1, c2 = st.columns(2)
-            with c1:
-                size = st.selectbox("📈 Business Size", 
-                    ["Startup (1-10)", "Small (11-50)", "Medium (51-500)", "Large (500+)"],
-                    key="size")
-                budget = st.number_input("💵 Budget (USD)", min_value=0, value=100, step=50, key="budget")
-            
-            with c2:
-                category = st.selectbox("📊 Category",
-                    ["Marketing Automation", "Content Creation", "Analytics", "CRM", 
-                     "Project Management", "Customer Service", "Sales", "Other"],
-                    key="category")
-                complexity = st.select_slider("⚙️ Complexity",
-                    ["Beginner", "Intermediate", "Advanced"], key="complexity")
-            
-            requirements = st.text_area("📝 Requirements", key="reqs", 
-                placeholder="Describe your needs...")
+        business_size = st.selectbox("🏢 Business Size", ["small", "medium", "large"])
+        budget = st.number_input("💵 Monthly Budget (USD)", min_value=0, value=100)
+        category = st.selectbox("📊 Tool Category", ["marketing_automation", "content_creation", "analytics", "crm"])
+        complexity = st.selectbox("⚙️ Complexity", ["easy", "moderate", "complex"])
+        
+        submitted = st.form_submit_button("🔍 Get Recommendations")
+    
+    if submitted:
+        # Simulate response data
+        form_data = {
+            'businessSize': business_size,
+            'budget': budget,
+            'category': category,
+            'complexity': complexity
+        }
 
-            if st.form_submit_button("🔍 Get Recommendations"):
-                analyze_tools(client, {
-                    "business_size": size,
-                    "budget": budget,
-                    "category": category,
-                    "complexity": complexity,
-                    "requirements": requirements
-                })
-    else:
-        st.warning("⚠️ Please enter your API key")
+        # Calculate match score for each tool
+        recommendations = [
+            {**tool, 'score': calculate_tool_score(tool, form_data)}
+            for tool in ai_tools
+        ]
 
+        # Sort tools based on score
+        recommendations = sorted(recommendations, key=lambda x: x['score'], reverse=True)
+
+        # Display recommendations
+        st.write("## 🎯 Recommended Tools for You")
+
+        for idx, tool in enumerate(recommendations):
+            # Highlight the top tool
+            is_best_match = idx == 0
+            tool_icon = get_icon(tool['category'])
+            budget_icon = "💰"
+            business_size_icons = " ".join([get_icon(size) for size in tool['businessSize']])
+            complexity_icon = get_icon(tool['complexity'])
+            
+            st.markdown(f"""
+            <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool['name']}</h3>
+                <p><strong>{budget_icon} Budget Range:</strong> ${tool['minBudget']} - ${tool['maxBudget']}</p>
+                <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
+                <p><strong>{complexity_icon} Complexity:</strong> {tool['complexity'].capitalize()}</p>
+                <p><strong>🛠️ Features:</strong> {', '.join(tool['features'])}</p>
+                <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool['score']}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
 if __name__ == "__main__":
     main()
