@@ -26,15 +26,12 @@ def get_icon(attribute):
     """Returns the icon corresponding to the provided attribute."""
     return ICON_MAP.get(attribute, "🔧")
 
-def format_full_tool_block(tool, is_best_match):
+def format_tool_card(tool, is_best_match):
     """Formats a single tool's details into a single card/block for display."""
     tool_icon = get_icon(tool.get('category', 'unknown'))
     budget_icon = "💰"
     business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
     complexity_icon = get_icon(tool.get('complexity', 'unknown'))
-
-    pros = tool.get('pros', ['No pros available'])
-    cons = tool.get('cons', ['No cons available'])
 
     return f"""
     <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
@@ -43,8 +40,8 @@ def format_full_tool_block(tool, is_best_match):
         <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
         <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
         <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
-        <p><strong>👍 Pros:</strong> {', '.join(pros)}</p>
-        <p><strong>👎 Cons:</strong> {', '.join(cons)}</p>
+        <p><strong>👍 Pros:</strong> {', '.join(tool.get('pros', ['No pros available']))}</p>
+        <p><strong>👎 Cons:</strong> {', '.join(tool.get('cons', ['No cons available']))}</p>
         <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
     </div>
     """
@@ -149,7 +146,7 @@ def display_recommendations(recommendations, form_data):
 
             is_best_match = idx == 0  # First tool is the best match
 
-            st.markdown(format_full_tool_block(tool, is_best_match), unsafe_allow_html=True)
+            st.markdown(format_tool_card(tool, is_best_match), unsafe_allow_html=True)
 
 def main():
     st.title("🤖 AI Tool Recommender")
