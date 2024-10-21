@@ -57,8 +57,7 @@ Return recommendations in markdown format with:
                     st.session_state.recommendations = tools
                     status.update(label="✅ Analysis complete!", state="complete")
                     
-                    display_recommendations(tools)
-                    return True
+                    return tools
 
         except Exception as e:
             handle_error(e, attempt, max_retries)
@@ -99,14 +98,6 @@ def display_recommendations(tools, sort_by='score'):
     if not tools:
         return
 
-    st.download_button(
-        "Export Results",
-        export_recommendations(tools),
-        "ai_tools.csv",
-        "text/csv",
-        key="download_button"
-    )
-    
     col1, col2 = st.columns(2)
     with col1:
         sort_by = st.selectbox(
@@ -122,6 +113,15 @@ def display_recommendations(tools, sort_by='score'):
     
     for tool in sorted(tools, key=lambda x: x['score'], reverse=True):
         create_tool_card(tool)
+
+    # Move the download button outside the form
+    st.download_button(
+        "Export Results",
+        export_recommendations(tools),
+        "ai_tools.csv",
+        "text/csv",
+        key="download_button"
+    )
 
 def create_tool_card(tool):
     with st.container():
@@ -249,13 +249,16 @@ def main():
             submitted = st.form_submit_button("Get Recommendations")
             
             if submitted:
-                analyze_with_claude(client, {
+                tools = analyze_with_claude(client, {
                     "business_size": business_size,
                     "budget": budget,
                     "category": category,
                     "complexity": complexity,
                     "requirements": requirements
                 })
+                
+                if tools:
+                    display_recommendations(tools)
 
     else:
         st.warning("Please enter your API key in the sidebar to continue")
