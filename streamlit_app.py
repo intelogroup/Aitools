@@ -5,6 +5,7 @@ import random
 import pandas as pd
 from datetime import datetime
 
+# Analyze data with Claude AI
 def analyze_with_claude(client, data, max_retries=3):
     prompt = f"""Based on these requirements, recommend 3 AI tools:
 Business Size: {data['business_size']}
@@ -32,8 +33,7 @@ Return recommendations in markdown format with:
 
     for attempt in range(max_retries):
         try:
-            with st.status("Analyzing requirements...") as status:
-                status.update(label="Querying AI...", expanded=True)
+            with st.spinner("Analyzing requirements..."):
                 response = client.beta.messages.create(
                     model="claude-3-opus-20240229",
                     messages=[{"role": "user", "content": prompt}],
@@ -43,7 +43,6 @@ Return recommendations in markdown format with:
                 
                 if hasattr(response, 'content'):
                     analysis = ''.join([block.text for block in response.content]) if isinstance(response.content, list) else response.content
-                    status.update(label="Processing results...", state="running")
                     
                     if 'recommendations' not in st.session_state:
                         st.session_state.recommendations = []
@@ -55,14 +54,13 @@ Return recommendations in markdown format with:
                             tools.append(tool)
                     
                     st.session_state.recommendations = tools
-                    status.update(label="✅ Analysis complete!", state="complete")
-                    
                     return tools
 
         except Exception as e:
             handle_error(e, attempt, max_retries)
     return False
 
+# Parse recommendation data from AI response
 def parse_recommendation(rec_text):
     try:
         lines = rec_text.split('\n')
@@ -94,6 +92,7 @@ def parse_recommendation(rec_text):
     except:
         return None
 
+# Display recommendations and download option
 def display_recommendations(tools, sort_by='score'):
     if not tools:
         return
@@ -108,21 +107,27 @@ def display_recommendations(tools, sort_by='score'):
     with col2:
         price_filter = st.slider('Price Range ($)', 0, 1000, (0, 1000), key='price_filter')
 
-    if st.toggle('Compare Tools', key='compare_toggle'):
+    if st.checkbox('Compare Tools', key='compare_toggle'):
         show_comparison_view(tools)
     
     for tool in sorted(tools, key=lambda x: x['score'], reverse=True):
         create_tool_card(tool)
 
-    # Move the download button outside the form
-    st.download_button(
-        "Export Results",
-        export_recommendations(tools),
-        "ai_tools.csv",
-        "text/csv",
-        key="download_button"
-    )
+    # Export data to CSV
+    csv_data = export_recommendations(tools)
 
+    if csv_data:  # Only show the button if CSV data was successfully generated
+        st.download_button(
+            "Export Results",
+            csv_data,
+            "ai_tools.csv",
+            "text/csv",
+            key="download_button"
+        )
+    else:
+        st.error("Unable to generate CSV for download.")
+
+# Create individual tool cards
 def create_tool_card(tool):
     with st.container():
         col1, col2 = st.columns([3,1])
@@ -158,6 +163,7 @@ def create_tool_card(tool):
                 for c in tool['cons']:
                     st.markdown(f"× {c}")
 
+# Compare AI tools in a table
 def show_comparison_view(tools):
     comparison_df = pd.DataFrame([{
         'Tool': t['name'],
@@ -174,10 +180,16 @@ def show_comparison_view(tools):
         hide_index=False
     )
 
+# Export recommendations as CSV
 def export_recommendations(tools):
-    df = pd.DataFrame(tools)
-    return df.to_csv(index=False)
+    try:
+        df = pd.DataFrame(tools)
+        return df.to_csv(index=False)  # Generate CSV from the DataFrame
+    except Exception as e:
+        st.error(f"Error generating CSV: {e}")
+        return None
 
+# Handle errors during execution
 def handle_error(error, attempt, max_retries):
     if "overloaded" in str(error).lower():
         if attempt < max_retries - 1:
@@ -189,6 +201,7 @@ def handle_error(error, attempt, max_retries):
     else:
         st.error(f"Error: {str(error)}")
 
+# Main function to render the app
 def main():
     st.set_page_config(page_title="AI Tool Recommender", layout="wide")
     
