@@ -5,49 +5,41 @@ from anthropic import Anthropic
 # Set page layout and title
 st.set_page_config(page_title="AI Tool Recommender", layout="wide")
 
-# Define distinct logos for each recommendation (name-based for this example)
-def get_unique_logo(recommendation_name):
-    logo_map = {
-        "ActiveCampaign": "🚀",
-        "Mailchimp": "🐵",
-        "Marketo": "📊",
-        "HubSpot": "📈",
-        "Salesforce": "🌐"
-    }
-    return logo_map.get(recommendation_name, "💡")  # Default icon
+# Icons dictionary to represent attributes
+ICONS = {
+    "marketing_automation": "💼",
+    "content_creation": "✍️",
+    "analytics": "📊",
+    "crm": "👥",
+    "email_automation": "✉️",
+    "social_media": "📱",
+    "moderate": "⚙️",
+    "complex": "⚙️",
+    "easy": "✅",
+    "small": "🏢",
+    "medium": "🏢🏢",
+    "large": "🏢🏢🏢"
+}
 
-# Format tool section for display in a single card
+def get_icon(attribute):
+    return ICONS.get(attribute, "")
+
 def format_tool_section(tool, is_best_match):
-    # Safely access dictionary keys using get() with default values
-    logo = get_unique_logo(tool.get('name', 'Unknown Tool'))
-    score = tool.get('score', 0)
-    
-    # Create the dark red circle with white text for the score
-    score_html = f"""
-    <div style="display:inline-block; background-color:#b22222; color:white; border-radius:50%; width:40px; height:40px; text-align:center; line-height:40px; font-weight:bold;">
-        {score}%
-    </div>
-    """
-    
+    tool_icon = get_icon(tool.get('category', 'unknown'))
     budget_icon = "💰"
-    business_size_icons = " ".join([get_unique_logo(size) for size in tool.get('businessSize', [])])
-    complexity_icon = get_unique_logo(tool.get('complexity', 'unknown'))
-    
-    # HTML structure for the card with tool details
+    business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
+    complexity_icon = get_icon(tool.get('complexity', 'unknown'))
+
     return f"""
     <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <div style="display: flex; align-items: center;">
-            <h3 style="font-size: 22px; font-weight: bold; margin-right: 10px;">{logo} {tool.get('name', 'Unknown Tool')}</h3>
-            {score_html}
-        </div>
+        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')} <span style="background-color:#8B0000;color:white;border-radius:50%;padding:4px 8px;font-weight:bold;">{tool.get('score', 0)}%</span></h3>
         <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
         <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
-        <p><strong>⚙️ Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
+        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
         <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
     </div>
     """
 
-# Communicate with Claude AI to get recommendations
 def get_claude_recommendations(client, form_data):
     prompt = f"""Based on the following business requirements, recommend 3 AI tools:
     - Business Size: {form_data['businessSize']}
@@ -75,14 +67,12 @@ def get_claude_recommendations(client, form_data):
                 max_tokens=2000
             )
             
-            # Parse the response content
             if hasattr(response, 'content'):
                 return ''.join([block.text for block in response.content]) if isinstance(response.content, list) else response.content
     except Exception as e:
         st.error(f"Error fetching recommendations: {str(e)}")
         return None
 
-# Main function to render the app
 def main():
     st.title("🤖 AI Tool Recommender")
 
@@ -96,7 +86,6 @@ def main():
         st.session_state.api_key = api_key
         client = Anthropic(api_key=api_key)
         
-        # Input form
         with st.form("tool_recommendation_form"):
             st.write("### 📋 Fill out the form to get personalized AI tool recommendations")
             
@@ -117,32 +106,32 @@ def main():
                 'requirements': requirements
             }
 
-            # Get recommendations from Claude AI
             recommendations = get_claude_recommendations(client, form_data)
 
             if recommendations:
-                # Split recommendations based on Claude response format
                 tools = recommendations.split("# ")[1:]
 
                 st.write("## 🎯 Recommended Tools for You")
-                for idx, tool_text in enumerate(tools):
+                for tool_text in tools:
                     tool_sections = tool_text.split('##')
                     tool_name = tool_sections[0].strip()
-                    is_best_match = idx == 0  # First tool is the best match
-                    
-                    # Example mock-up, split tool response sections as needed
+                    tool_score = int(tool_sections[1].strip().split(" ")[0])
+                    tool_budget = tool_sections[2].strip().split(" ")[2:]
+                    tool_business_size = tool_sections[3].strip().split(" ")[2:]
+                    tool_complexity = tool_sections[4].strip().split(" ")[1]
+                    tool_features = [feature.strip() for feature in tool_sections[5].strip().split(":")[1].split(",")]
+
                     tool = {
                         'name': tool_name,
-                        'score': random.randint(80, 100),  # Mocked match score
-                        'minBudget': random.randint(0, 100),
-                        'maxBudget': random.randint(100, 1000),
-                        'businessSize': ["small", "medium", "large"],
-                        'features': ["Email Automation", "CRM", "Advanced Analytics"],
-                        'complexity': form_data['complexity']
+                        'score': tool_score,
+                        'minBudget': int(tool_budget[0]),
+                        'maxBudget': int(tool_budget[2]),
+                        'businessSize': tool_business_size,
+                        'complexity': tool_complexity,
+                        'features': tool_features
                     }
 
-                    # Render the formatted tool card
-                    st.markdown(format_tool_section(tool, is_best_match), unsafe_allow_html=True)
+                    st.markdown(format_tool_section(tool, False), unsafe_allow_html=True)
 
     else:
         st.warning("⚠️ Please enter your API key")
