@@ -48,7 +48,7 @@ def format_tool_card(tool):
 
 def analyze_with_claude(client, form_data, max_retries=3, delay=5):
     """Fetches recommendations from Claude AI, with retry logic for handling overload errors."""
-    prompt = f"""Based on the following business requirements, recommend 3 AI tools:
+    prompt = f"""Based on the following business requirements, recommend 5 AI tools:
     - Business Size: {form_data['businessSize']}
     - Monthly Budget: ${form_data['budget']}
     - Tool Category: {form_data['category']}
