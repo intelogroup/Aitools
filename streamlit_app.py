@@ -75,19 +75,6 @@ def display_recommendations(recommendations):
         for tool_text in tools:
             tool_sections = tool_text.split('##')
 
-            # Safely extract sections with fallback defaults
-            tool_name = tool_sections[0].strip() if len(tool_sections) > 0 else "Unknown Tool"
-            match_score = int(tool_sections[1].strip('## Match Score (0-100%): ')) if len(tool_sections) > 1 and tool_sections[1].strip('## Match Score (0-100%): ').isdigit() else 0
-            budget_range = tool_sections[2].strip() if len(tool_sections) > 2 else "Not available"
-            business_size = tool_sections[3].strip() if len(tool_sections) > 3 else "Not available"
-            complexity_level = tool_sections[4].strip() if len(tool_sections) > 4 else "Not available"
-            features = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No features available"]
-            pros_cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No pros or cons available"]
-
-            # Split pros and cons from the combined list
-            pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
-            cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
-
             # Render each tool in a single card
             st.markdown(f"""
             <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
