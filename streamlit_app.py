@@ -1,8 +1,9 @@
 import streamlit as st
-from anthropic import Anthropic
 import time
 import random
+from anthropic import Anthropic
 
+# Function to interact with Claude and fetch recommendations
 def analyze_with_claude(client, data, max_retries=3):
     prompt = f"""Based on these requirements, recommend 3 AI tools:
 
@@ -84,16 +85,18 @@ Provide 3 recommendations in this exact format."""
                 st.error(f"Error: {str(e)}")
             return None
 
+# Main function to display the form and process the request
 def main():
     st.title("AI Tool Recommender")
     
     if 'api_key' not in st.session_state:
         st.session_state.api_key = ''
     
+    # Input API Key
     api_key = st.text_input("Enter Anthropic API Key:", 
-                           value=st.session_state.api_key,
-                           type="password")
-                           
+                            value=st.session_state.api_key,
+                            type="password")
+    
     if api_key:
         st.session_state.api_key = api_key
         client = Anthropic(api_key=api_key)
@@ -142,5 +145,6 @@ def main():
     else:
         st.warning("Please enter your Anthropic API key to continue")
 
+# Run the app
 if __name__ == "__main__":
     main()
