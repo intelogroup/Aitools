@@ -24,19 +24,20 @@ def get_icon(attribute):
 
 # Format tool section for display
 def format_tool_section(tool, is_best_match):
-    tool_icon = get_icon(tool['category'])
+    # Safely access dictionary keys using get() with default values
+    tool_icon = get_icon(tool.get('category', 'unknown'))
     budget_icon = "💰"
-    business_size_icons = " ".join([get_icon(size) for size in tool['businessSize']])
-    complexity_icon = get_icon(tool['complexity'])
+    business_size_icons = " ".join([get_icon(size) for size in tool.get('businessSize', [])])
+    complexity_icon = get_icon(tool.get('complexity', 'unknown'))
     
     return f"""
     <div style="border: 2px solid {'#4CAF50' if is_best_match else '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool['name']}</h3>
-        <p><strong>{budget_icon} Budget Range:</strong> ${tool['minBudget']} - ${tool['maxBudget']}</p>
+        <h3 style="font-size: 22px; font-weight: bold;">{tool_icon} {tool.get('name', 'Unknown Tool')}</h3>
+        <p><strong>{budget_icon} Budget Range:</strong> ${tool.get('minBudget', 0)} - ${tool.get('maxBudget', 0)}</p>
         <p><strong>🏢 Business Size:</strong> {business_size_icons}</p>
-        <p><strong>{complexity_icon} Complexity:</strong> {tool['complexity'].capitalize()}</p>
-        <p><strong>🛠️ Features:</strong> {', '.join(tool['features'])}</p>
-        <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool['score']}%</p>
+        <p><strong>{complexity_icon} Complexity:</strong> {tool.get('complexity', 'Unknown').capitalize()}</p>
+        <p><strong>🛠️ Features:</strong> {', '.join(tool.get('features', ['No features available']))}</p>
+        <p style="color: {'#4CAF50' if is_best_match else '#000'}; font-weight: bold;">Match Score: {tool.get('score', 0)}%</p>
     </div>
     """
 
