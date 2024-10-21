@@ -75,52 +75,32 @@ def analyze_with_claude(client, form_data, max_retries=3, delay=5):
                     max_tokens=2000
                 )
 
+                # Handle the response content properly
                 if hasattr(response, 'content'):
-                    return ''.join([block.text for block in response.content]) if isinstance(response.content, list) else response.content
+                    # If response.content is a list of TextBlocks, join their text
+                    if isinstance(response.content, list):
+                        analysis = ''.join([block.text for block in response.content])
+                    else:
+                        analysis = response.content
+
+                    # Display the markdown-formatted response
+                    st.markdown(analysis, unsafe_allow_html=True)
+                    return True
+                else:
+                    st.error("Unexpected response format")
+                    return None
 
         except Exception as e:
-            if 'overloaded' in str(e).lower() and attempt < max_retries - 1:
-                st.warning(f"Server overloaded, retrying in {delay} seconds... ({attempt+1}/{max_retries})")
-                time.sleep(delay)
+            if "overloaded" in str(e).lower():
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 3 + random.uniform(1, 3)
+                    st.warning(f"Service busy. Retrying in {wait_time:.1f} seconds...")
+                    time.sleep(wait_time)
+                    continue
+                st.error("Service temporarily unavailable. Please try again later.")
             else:
-                st.error(f"Error fetching recommendations: {str(e)}")
-                return None
-
-def display_recommendations(recommendations):
-    """Displays the recommendations received from Claude AI."""
-    if recommendations:
-        tools = recommendations.split("# ")[1:]  # Split by the tool separator
-        st.write("## 🎯 Recommended Tools for You")
-
-        for tool_text in tools:
-            tool_sections = tool_text.split('##')
-
-            # Safely extract sections with fallback defaults
-            tool_name = tool_sections[0].strip() if len(tool_sections) > 0 else "Unknown Tool"
-            match_score = int(tool_sections[1].strip('## Match Score (0-100%): ')) if len(tool_sections) > 1 and tool_sections[1].strip('## Match Score (0-100%): ').isdigit() else 0
-            budget_range = tool_sections[2].strip() if len(tool_sections) > 2 else "Not available"
-            business_size = tool_sections[3].strip() if len(tool_sections) > 3 else "Not available"
-            complexity_level = tool_sections[4].strip() if len(tool_sections) > 4 else "Not available"
-            features = tool_sections[5].strip().split(", ") if len(tool_sections) > 5 else ["No features available"]
-            pros_cons = tool_sections[6].strip().split(", ") if len(tool_sections) > 6 else ["No pros or cons available"]
-
-            # Split pros and cons from the combined list
-            pros = pros_cons[:len(pros_cons) // 2] if len(pros_cons) > 1 else ["No pros available"]
-            cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
-
-            # Render each tool in a single card
-            st.markdown(f"""
-            <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                <h3 style="font-size: 22px; font-weight: bold;">{tool_name}</h3>
-                <p><strong>💰 Budget Range:</strong> ${budget_range.split(' - ')[0]} - ${budget_range.split(' - ')[1] if len(budget_range.split(' - ')) > 1 else budget_range.split(' - ')[0]}</p>
-                <p><strong>🏢 Business Size:</strong> {business_size}</p>
-                <p><strong>✅ Complexity:</strong> {complexity_level.capitalize()}</p>
-                <p><strong>🛠️ Features:</strong> {', '.join(features)}</p>
-                <p><strong>👍 Pros:</strong> {', '.join(pros)}</p>
-                <p><strong>👎 Cons:</strong> {', '.join(cons)}</p>
-                <p style="color: #000; font-weight: bold;">Match Score: {match_score}%</p>
-            </div>
-            """, unsafe_allow_html=True)
+                st.error(f"Error: {str(e)}")
+            return None
 
 def main():
     st.title("🤖 AI Tool Recommender")
@@ -158,13 +138,7 @@ def main():
             }
 
             # Get recommendations from Claude AI
-            recommendations = analyze_with_claude(client, form_data)
-
-            # Display recommendations
-            if recommendations:
-                display_recommendations(recommendations)
-            else:
-                st.warning("No recommendations available. Please try again later.")
+            analyze_with_claude(client, form_data)
 
     else:
         st.warning("⚠️ Please enter your API key")
