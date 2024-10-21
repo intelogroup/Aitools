@@ -1,4 +1,4 @@
- Refactor this code  while ensuring the clean display of recommendations and structured output (with icons, pros, cons, and match scores), we can refactor your code to ensure a cohesive look and feel. Here's how we can refactor the recommendation display logic using cards, icons, and the structured output you provided.                                                                               import streamlit as st 
+import streamlit as st
 from anthropic import Anthropic
 import random
 import time
@@ -14,8 +14,6 @@ ICON_MAP = {
     "crm": "👥",
     "email_automation": "📧",
     "sms_marketing": "📱",
-    "marketing_automation": "🤖",
-    "crm": "📋",
     "site_tracking": "🌐",
     "website_builder": "🌐",
     "ecommerce": "🛒",
@@ -57,10 +55,7 @@ def display_recommendations(recommendations):
             cons = pros_cons[len(pros_cons) // 2:] if len(pros_cons) > 1 else ["No cons available"]
 
             # Render each tool in a card-like format
-            if tool_name == "Mailchimp":
-                tool_icon = get_icon("crown") + get_icon("email_automation")
-            else:
-                tool_icon = get_icon("email_automation")
+            tool_icon = get_icon("email_automation")
 
             st.markdown(f"""
             <div style="border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
@@ -182,4 +177,4 @@ def main():
         st.warning("⚠️ Please enter your API key")
 
 if __name__ == "__main__":
-    main() 
+    main()
