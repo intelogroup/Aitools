@@ -57,66 +57,20 @@ Provide 3 recommendations in this exact format."""
                 max_tokens=2000
             )
             
-            recommendations = response.content.split("\n# ")[1:]
-            
-            st.write("### AI Tool Recommendations")
-            
-            for idx, rec in enumerate(recommendations, 1):
-                sections = rec.split("\n## ")
-                tool_name = sections[0].strip()
+            # Handle the response content properly
+            if hasattr(response, 'content'):
+                # If response.content is a list of TextBlocks, join their text
+                if isinstance(response.content, list):
+                    analysis = ''.join([block.text for block in response.content])
+                else:
+                    analysis = response.content
                 
-                with st.expander(f"Tool #{idx}: {tool_name}", expanded=True):
-                    col1, col2 = st.columns([2,1])
-                    
-                    with col1:
-                        st.subheader(tool_name)
-                        
-                        for section in sections[1:]:
-                            if section.startswith("Description"):
-                                st.write(section.replace("Description\n", ""))
-                            elif section.startswith("Best suited for"):
-                                st.write("**Best For:**", section.replace("Best suited for\n", ""))
-                            elif section.startswith("Key features"):
-                                st.write("**Key Features:**")
-                                features = section.replace("Key features\n", "").split("- ")[1:]
-                                for feature in features:
-                                    st.write(f"• {feature.strip()}")
-                    
-                    with col2:
-                        for section in sections:
-                            if section.startswith("Match score"):
-                                score = section.replace("Match score\n", "").strip()
-                                st.metric("Match Score", score)
-                            elif section.startswith("Pricing"):
-                                st.write("**Pricing:**")
-                                st.write(section.replace("Pricing\n", ""))
-                    
-                    col3, col4 = st.columns(2)
-                    
-                    with col3:
-                        st.write("**Pros:**")
-                        for section in sections:
-                            if section.startswith("Pros"):
-                                pros = section.replace("Pros\n", "").split("- ")[1:]
-                                for pro in pros:
-                                    st.write(f"✓ {pro.strip()}")
-                    
-                    with col4:
-                        st.write("**Cons:**")
-                        for section in sections:
-                            if section.startswith("Cons"):
-                                cons = section.replace("Cons\n", "").split("- ")[1:]
-                                for con in cons:
-                                    st.write(f"✗ {con.strip()}")
-                    
-                    for section in sections:
-                        if section.startswith("Website URL"):
-                            url = section.replace("Website URL\n", "").strip()
-                            st.link_button("Visit Website", url)
-                
-                st.divider()
-            
-            return True
+                # Display the markdown-formatted response
+                st.markdown(analysis, unsafe_allow_html=True)
+                return True
+            else:
+                st.error("Unexpected response format")
+                return None
                 
         except Exception as e:
             if "overloaded" in str(e).lower():
